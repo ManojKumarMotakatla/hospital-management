@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Dashboard — MediCare</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand:#0050ff; --brand-soft:#e8efff;
+    --surface:#f4f7fc; --radius:14px;
+    --text:#0f172a; --muted:#64748b;
+  }
+  body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--surface); color:var(--text); }
+
+  .site-nav { background:#fff; border-bottom:1px solid #e2e8f0; padding:.9rem 0; position:sticky;top:0;z-index:1030; }
+  .brand-logo { font-weight:800;font-size:1.2rem;color:var(--brand);text-decoration:none; }
+
+  .avatar-circle {
+    width:72px; height:72px; border-radius:50%;
+    background:linear-gradient(135deg,#0050ff,#00b4d8);
+    color:#fff; font-size:1.8rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto;
+  }
+
+  .stat-pill {
+    background:#fff; border:1px solid #e2e8f0;
+    border-radius:var(--radius); padding:1rem 1.2rem;
+    text-align:center; flex:1 1 140px;
+  }
+  .stat-pill .num { font-size:1.6rem; font-weight:800; color:var(--brand); }
+  .stat-pill .lbl { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+
+  .appt-card {
+    background:#fff; border:1px solid #e2e8f0;
+    border-radius:var(--radius); transition:box-shadow .2s;
+  }
+  .appt-card:hover { box-shadow:0 6px 20px rgba(0,80,255,.08); }
+
+  .appt-card .hospital-stripe {
+    height:4px; border-radius:var(--radius) var(--radius) 0 0;
+    background:linear-gradient(90deg,#0050ff,#00b4d8);
+  }
+
+  .field-label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .field-value { font-size:.9rem; font-weight:700; }
+
+  .qr-mini { width:80px; height:80px; border-radius:8px; }
+
+  .btn-xs { padding:.2rem .5rem; font-size:.75rem; }
+  .badge  { font-weight:600; }
+
+  /* tab pills */
+  .nav-pills .nav-link { border-radius:50px; font-weight:600; color:var(--muted); }
+  .nav-pills .nav-link.active { background:var(--brand); color:#fff; }
+
+  /* modal */
+  .modal-header-brand { background:var(--brand); color:#fff; }
+
+  @keyframes fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .fade-in { animation:fade-in .35s ease both; }
+</style>
+</head>
+<body>
+
+<!-- ══ NAVBAR ════════════════════════════════════════════════ -->
+<nav class="site-nav">
+  <div class="container d-flex align-items-center gap-3">
+    <a class="brand-logo me-auto" href="../main.html">
+      <i class="bi bi-hospital-fill me-1"></i>MediCare
+    </a>
+    <span class="text-muted small" id="navWelcome"></span>
+    <a href="../main.html" class="btn btn-primary btn-sm fw-semibold">
+      <i class="bi bi-calendar-plus me-1"></i>Book Appointment
+    </a>
+    <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="doLogout()">
+      <i class="bi bi-box-arrow-right me-1"></i>Logout
+    </button>
+  </div>
+</nav>
+
+<!-- ══ MAIN ═══════════════════════════════════════════════════ -->
+<div class="container py-4">
+
+  <!-- Profile row -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="bg-white border rounded-4 p-4 text-center shadow-sm fade-in">
+        <div class="avatar-circle mb-3" id="avatarInitial"></div>
+        <h5 class="fw-bold mb-0" id="profileName"></h5>
+        <p class="text-muted small mb-2" id="profilePhone"></p>
+        <span class="badge bg-success px-3">Active Patient</span>
+        <hr>
+        <div class="text-start">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <small class="text-muted">Patient ID</small>
+            <code class="small" id="profileId"></code>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <small class="text-muted">Age</small>
+            <strong class="small" id="profileAge"></strong>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <small class="text-muted">Member Since</small>
+            <strong class="small" id="profileDate"></strong>
+          </div>
+        </div>
+        <a href="view-patient.html" class="btn btn-outline-primary btn-sm w-100 mt-3">
+          <i class="bi bi-person-lines-fill me-1"></i>Full Profile
+        </a>
+      </div>
+    </div>
+
+    <div class="col-md-8 fade-in" style="animation-delay:.1s">
+      <!-- Stats -->
+      <div class="d-flex flex-wrap gap-3 mb-4">
+        <div class="stat-pill">
+          <div class="num" id="statTotal">0</div>
+          <div class="lbl">Total</div>
+        </div>
+        <div class="stat-pill">
+          <div class="num text-success" id="statVisited">0</div>
+          <div class="lbl">Visited</div>
+        </div>
+        <div class="stat-pill">
+          <div class="num text-primary" id="statBooked">0</div>
+          <div class="lbl">Booked</div>
+        </div>
+        <div class="stat-pill">
+          <div class="num text-warning" id="statPostponed">0</div>
+          <div class="lbl">Postponed</div>
+        </div>
+        <div class="stat-pill">
+          <div class="num text-danger" id="statNotVisited">0</div>
+          <div class="lbl">Not Visited</div>
+        </div>
+      </div>
+
+      <!-- Filter tabs -->
+      <ul class="nav nav-pills mb-3" id="apptTabs">
+        <li class="nav-item"><button class="nav-link active" onclick="filterAppts('ALL',this)">All</button></li>
+        <li class="nav-item"><button class="nav-link" onclick="filterAppts('BOOKED',this)">Booked</button></li>
+        <li class="nav-item"><button class="nav-link" onclick="filterAppts('VISITED',this)">Visited</button></li>
+        <li class="nav-item"><button class="nav-link" onclick="filterAppts('NOT_VISITED',this)">Not Visited</button></li>
+        <li class="nav-item"><button class="nav-link" onclick="filterAppts('POSTPONED',this)">Postponed</button></li>
+      </ul>
+
+      <div id="appointmentsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ POSTPONE MODAL (Patient) ═══════════════════════════════ -->
+<div class="modal fade" id="postponeModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header modal-header-brand">
+        <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Emergency Postpone</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-warning border-0 mb-3">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Emergency Postponement</strong> — This action will notify the doctor.
+        </div>
+        <p class="small text-muted mb-3" id="postponeInfo"></p>
+        <div id="postponeAlert"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">New Date <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="newDate">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">New Time Slot <span class="text-danger">*</span></label>
+          <input type="time" class="form-control" id="newTime">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning fw-semibold text-dark" onclick="submitPostpone()">
+          <i class="bi bi-clock-history me-1"></i>Confirm Postpone
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR / RECEIPT MODAL ════════════════════════════════════ -->
+<div class="modal fade" id="receiptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-receipt me-2"></i>Appointment Receipt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4" id="receiptModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/patientAuth.js"></script>
+<script>
+// ── Auth guard ────────────────────────────────────────────────
+const _patient = getSession();
+if (!_patient) window.location.href = '../auth/patient-login.html';
+
+// ── Populate profile ──────────────────────────────────────────
+function populateProfile() {
+  const p = _patient;
+  document.getElementById('navWelcome').textContent = `Hi, ${p.name}`;
+  document.getElementById('avatarInitial').textContent = p.name.charAt(0).toUpperCase();
+  document.getElementById('profileName').textContent  = p.name;
+  document.getElementById('profilePhone').textContent = p.phone;
+  document.getElementById('profileId').textContent    = p.id;
+  document.getElementById('profileAge').textContent   = p.age + ' yrs';
+  document.getElementById('profileDate').textContent  = new Date(p.registeredAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function updateStats() {
+  const appts = getAppointmentsByPatientId(_patient.id);
+  document.getElementById('statTotal').textContent      = appts.length;
+  document.getElementById('statVisited').textContent    = appts.filter(a=>a.status==='VISITED').length;
+  document.getElementById('statBooked').textContent     = appts.filter(a=>a.status==='BOOKED').length;
+  document.getElementById('statNotVisited').textContent = appts.filter(a=>a.status==='NOT_VISITED').length;
+  document.getElementById('statPostponed').textContent  =
+    appts.filter(a=>a.status==='POSTPONED_BY_PATIENT'||a.status==='POSTPONED_BY_DOCTOR').length;
+}
+
+// ── Render appointments ───────────────────────────────────────
+let _currentFilter = 'ALL';
+
+function filterAppts(status, btn) {
+  _currentFilter = status;
+  document.querySelectorAll('#apptTabs .nav-link').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAppointments();
+}
+
+function renderAppointments() {
+  const container = document.getElementById('appointmentsList');
+  let appts = getAppointmentsByPatientId(_patient.id);
+
+  if (_currentFilter !== 'ALL' && !_currentFilter.startsWith('POSTPONED')) {
+    appts = appts.filter(a => a.status === _currentFilter);
+  } else if (_currentFilter === 'POSTPONED') {
+    appts = appts.filter(a => a.status === 'POSTPONED_BY_PATIENT' || a.status === 'POSTPONED_BY_DOCTOR');
+  }
+
+  appts.sort((a, b) => new Date(b.bookedAt) - new Date(a.bookedAt));
+
+  if (!appts.length) {
+    container.innerHTML = `
+      <div class="text-center py-5 bg-white rounded-4 border">
+        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+        <p class="text-muted mt-2 mb-3">No appointments found.</p>
+        <a href="../main.html" class="btn btn-primary btn-sm fw-semibold">Book Your First Appointment</a>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = appts.map(a => buildApptCard(a)).join('');
+}
+
+function buildApptCard(a) {
+  const canPostpone = a.status === 'BOOKED' || a.status.startsWith('POSTPONED');
+  const qrData      = encodeURIComponent(`${a.id}|${a.patientName}|${a.doctorName}`);
+  const qrUrl       = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${qrData}`;
+
+  return `
+    <div class="appt-card mb-3 fade-in overflow-hidden">
+      <div class="hospital-stripe"></div>
+      <div class="p-3">
+        <div class="d-flex align-items-start gap-3">
+          <img src="${qrUrl}" class="qr-mini flex-shrink-0 border rounded"
+            alt="QR" onerror="this.style.display='none'">
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+              <strong>${a.doctorName}</strong>
+              ${statusBadgeHTML(a.status)}
+            </div>
+            <p class="text-muted small mb-2">${a.specialization} &bull; ${a.hospitalName}</p>
+            <div class="d-flex flex-wrap gap-3">
+              <span class="small"><i class="bi bi-calendar3 me-1 text-primary"></i>${formatDate(a.consultDate)}</span>
+              <span class="small"><i class="bi bi-clock me-1 text-primary"></i>${a.consultTime}</span>
+              <span class="small text-muted"><i class="bi bi-hash me-1"></i>${a.id.slice(-8)}</span>
+            </div>
+          </div>
+          <div class="d-flex flex-column gap-1 flex-shrink-0">
+            <button class="btn btn-xs btn-outline-primary" onclick="viewReceipt('${a.id}')" title="View Receipt">
+              <i class="bi bi-receipt me-1"></i>Receipt
+            </button>
+            ${a.status === 'BOOKED' ? `
+              <button class="btn btn-xs btn-outline-success" onclick="patientScanQR('${a.id}')" title="Simulate QR Scan">
+                <i class="bi bi-qr-code-scan me-1"></i>Scan QR
+              </button>` : ''}
+            ${canPostpone ? `
+              <button class="btn btn-xs btn-outline-warning text-dark" onclick="openPostponeModal('${a.id}')" title="Postpone">
+                <i class="bi bi-clock-history me-1"></i>Postpone
+              </button>` : ''}
+          </div>
+        </div>
+        ${a.status === 'POSTPONED_BY_DOCTOR' ? `
+          <div class="alert alert-warning border-0 py-2 mt-2 mb-0 small">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Doctor rescheduled:</strong> New time — ${formatDate(a.consultDate)} at ${a.consultTime}
+          </div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ── QR scan simulation ────────────────────────────────────────
+function patientScanQR(id) {
+  confirmVisit(id);
+  updateStats();
+  renderAppointments();
+  showToastPatient('✅ Visit confirmed! Your attendance has been marked.', 'success');
+}
+
+// ── Receipt modal ─────────────────────────────────────────────
+function viewReceipt(id) {
+  const a = getAppointmentById(id);
+  if (!a) return;
+  const qrData = encodeURIComponent(`${a.id}|${a.patientName}|${a.doctorName}|${a.consultDate} ${a.consultTime}`);
+  const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
+
+  document.getElementById('receiptModalBody').innerHTML = `
+    <div class="appt-receipt">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h6 class="fw-bold text-primary mb-0">${a.hospitalName}</h6>
+          <small class="text-muted">Official Appointment Receipt</small>
+        </div>
+        ${statusBadgeHTML(a.status)}
+      </div>
+      <hr class="my-2">
+      <div class="row g-2 mb-3">
+        <div class="col-6"><div class="field-label">Patient</div><div class="field-value">${a.patientName}</div></div>
+        <div class="col-6"><div class="field-label">Phone</div><div class="field-value">${a.patientPhone}</div></div>
+        <div class="col-6"><div class="field-label">Doctor</div><div class="field-value">${a.doctorName}</div></div>
+        <div class="col-6"><div class="field-label">Specialization</div><div class="field-value">${a.specialization}</div></div>
+        <div class="col-6"><div class="field-label">Date</div><div class="field-value">${formatDate(a.consultDate)}</div></div>
+        <div class="col-6"><div class="field-label">Time</div><div class="field-value">${a.consultTime}</div></div>
+      </div>
+      <div class="text-center border-top pt-3">
+        <small class="text-muted fw-semibold d-block mb-2">Show this QR at Hospital Reception</small>
+        <img src="${qrUrl}" class="rounded border" style="width:130px;height:130px" alt="QR">
+        <p class="text-muted mt-2 mb-0" style="font-size:.65rem;font-family:monospace">${a.id}</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      ${a.status === 'BOOKED' ? `
+        <button class="btn btn-success btn-sm flex-grow-1 fw-semibold" onclick="patientScanQR('${a.id}');bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide()">
+          <i class="bi bi-qr-code-scan me-1"></i>Simulate QR Scan
+        </button>` : ''}
+      ${(a.status === 'BOOKED' || a.status.startsWith('POSTPONED')) ? `
+        <button class="btn btn-warning btn-sm flex-grow-1 text-dark fw-semibold"
+          onclick="bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide();openPostponeModal('${a.id}')">
+          <i class="bi bi-clock-history me-1"></i>Postpone
+        </button>` : ''}
+    </div>`;
+
+  new bootstrap.Modal(document.getElementById('receiptModal')).show();
+}
+
+// ── Postpone (patient) ────────────────────────────────────────
+let _postponeId = null;
+
+function openPostponeModal(id) {
+  _postponeId = id;
+  const a = getAppointmentById(id);
+  if (!a) return;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('newDate').min   = today;
+  document.getElementById('newDate').value = '';
+  document.getElementById('newTime').value = '';
+  document.getElementById('postponeAlert').innerHTML = '';
+  document.getElementById('postponeInfo').innerHTML =
+    `<strong>${a.doctorName}</strong> — ${a.specialization}<br>
+     <i class="bi bi-hospital me-1"></i>${a.hospitalName}<br>
+     Current: ${formatDate(a.consultDate)} at ${a.consultTime}`;
+  new bootstrap.Modal(document.getElementById('postponeModal')).show();
+}
+
+function submitPostpone() {
+  const date    = document.getElementById('newDate').value;
+  const rawTime = document.getElementById('newTime').value;
+  const alertEl = document.getElementById('postponeAlert');
+
+  if (!date || !rawTime) {
+    alertEl.innerHTML = `<div class="alert alert-danger py-2">Please select both date and time.</div>`;
+    return;
+  }
+
+  // Format time nicely
+  const [h, m] = rawTime.split(':');
+  const hour   = parseInt(h);
+  const ampm   = hour >= 12 ? 'PM' : 'AM';
+  const disp   = `${(hour % 12 || 12).toString().padStart(2,'0')}:${m} ${ampm}`;
+
+  postponeByPatient(_postponeId, date, disp);
+  bootstrap.Modal.getInstance(document.getElementById('postponeModal')).hide();
+  updateStats();
+  renderAppointments();
+  showToastPatient('Appointment postponed successfully.', 'warning');
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToastPatient(msg, type = 'primary') {
+  let c = document.getElementById('ptToastWrap');
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'ptToastWrap';
+    c.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999';
+    document.body.appendChild(c);
+  }
+  const tid = 'pt-' + Date.now();
+  c.insertAdjacentHTML('beforeend', `
+    <div id="${tid}" class="toast align-items-center text-bg-${type} border-0 mb-2" role="alert" data-bs-autohide="true" data-bs-delay="3500">
+      <div class="d-flex">
+        <div class="toast-body fw-semibold">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>`);
+  new bootstrap.Toast(document.getElementById(tid)).show();
+}
+
+// ── Date formatter ────────────────────────────────────────────
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr + 'T00:00:00')
+    .toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ── Logout ────────────────────────────────────────────────────
+function doLogout() {
+  clearSession();
+  window.location.href = '../auth/patient-login.html';
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+populateProfile();
+updateStats();
+renderAppointments();
+</script>
+</body>
+</html>
